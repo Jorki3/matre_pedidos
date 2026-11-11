@@ -1,8 +1,15 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { loadCatalog, loadOrder, saveCatalog, saveOrder } from '../lib/db';
+	import { onDestroy, onMount } from 'svelte';
+	import { loadCatalog, loadOrder, ORDER_MIRROR_KEY, saveCatalog, saveOrder } from '../lib/db';
 	import { searchProducts } from '../lib/search';
-	import { addToOrder, orderTotals, removeLine, updateLineQuantity } from '../lib/order';
+	import {
+		addToOrder,
+		orderLineForProduct,
+		orderTotals,
+		removeLine,
+		setOrderProductQuantity,
+		updateLineQuantity
+	} from '../lib/order';
 	import {
 		detectColumns,
 		importFields,
@@ -35,16 +42,30 @@
 
 	const results = $derived(searchProducts(catalog, query));
 	const totals = $derived(orderTotals(order));
+	const selectedLine = $derived(selected ? orderLineForProduct(order, selected.id) : undefined);
 	const shownExact = $derived(results.exact.slice(0, 100));
 	const shownSimilar = $derived(results.similar.slice(0, 100));
 	const importPreview = $derived(
 		importRows.length > 0 ? previewCatalog(importRows, importMapping, catalog, importMode) : null
 	);
 
+	// Si el pedido cambia en otra pestaña, esta se actualiza con lo último guardado.
+	function handleStorage(event: StorageEvent) {
+		if (event.key !== ORDER_MIRROR_KEY) return;
+		void loadOrder().then((lines) => {
+			order = lines;
+		});
+	}
+
 	onMount(async () => {
 		catalog = await loadCatalog();
 		order = await loadOrder();
 		loaded = true;
+		window.addEventListener('storage', handleStorage);
+	});
+
+	onDestroy(() => {
+		if (typeof window !== 'undefined') window.removeEventListener('storage', handleStorage);
 	});
 
 	function showNotice(message: string) {
@@ -56,13 +77,25 @@
 
 	async function persistOrder(lines: OrderLine[]) {
 		order = lines;
-		await saveOrder(lines);
+		try {
+			await saveOrder(lines);
+		} catch {
+			showNotice('No se pudo guardar el pedido. Revisa el almacenamiento e inténtalo de nuevo.');
+		}
 	}
 
-	function confirmAdd(quantity: number) {
+	async function confirmAdd(quantity: number) {
 		if (!selected) return;
-		persistOrder(addToOrder(order, selected, quantity));
-		showNotice(`${selected.name}: ${quantity} ${quantity === 1 ? 'pieza' : 'piezas'} al pedido.`);
+		const alreadyInOrder = orderLineForProduct(order, selected.id) !== undefined;
+		const updated = alreadyInOrder
+			? setOrderProductQuantity(order, selected, quantity)
+			: addToOrder(order, selected, quantity);
+		await persistOrder(updated);
+		showNotice(
+			alreadyInOrder
+				? `${selected.name}: cantidad ajustada a ${quantity} ${quantity === 1 ? 'pieza' : 'piezas'}.`
+				: `${selected.name}: ${quantity} ${quantity === 1 ? 'pieza' : 'piezas'} al pedido.`
+		);
 		selected = null;
 	}
 
@@ -146,7 +179,7 @@
 		<div class="flex items-center justify-between">
 			<div>
 				<h1 class="text-xl font-bold leading-tight text-zinc-50">
-					MATRE Pedidos <span class="ml-1 rounded-md bg-accent px-1.5 py-0.5 align-middle text-xs font-bold text-white">v0.1.0</span>
+					MATRE Pedidos <span class="ml-1 rounded-md bg-accent px-1.5 py-0.5 align-middle text-xs font-bold text-white">v0.1.1</span>
 				</h1>
 				<p class="text-xs text-zinc-400">
 					{catalog.length} {catalog.length === 1 ? 'producto' : 'productos'} en catálogo
@@ -203,6 +236,7 @@
 				</p>
 				<ul class="mt-3 space-y-2">
 					{#each shownExact as product (product.id)}
+						{@const inOrder = orderLineForProduct(order, product.id)}
 						<li>
 							<button
 								type="button"
@@ -210,6 +244,11 @@
 								onclick={() => (selected = product)}
 							>
 								<span class="block text-base font-semibold text-zinc-50">{product.name}</span>
+								{#if inOrder}
+									<span class="mt-1 inline-block rounded-md bg-accent/15 px-2 py-0.5 text-xs font-bold text-accent">
+										Ya está en la lista · {inOrder.quantity} {inOrder.quantity === 1 ? 'pieza' : 'piezas'}
+									</span>
+								{/if}
 								<span class="mt-0.5 block text-sm text-zinc-400">
 									Clave {product.key}{product.alternateKey ? ` · Alterna ${product.alternateKey}` : ''} · Existencia {product.expected}
 								</span>
@@ -226,6 +265,7 @@
 					<h2 class="mt-4 text-sm font-bold tracking-wide text-emerald-400 uppercase">Coincide</h2>
 					<ul class="mt-2 space-y-2">
 						{#each shownExact as product (product.id)}
+							{@const inOrder = orderLineForProduct(order, product.id)}
 							<li>
 								<button
 									type="button"
@@ -233,6 +273,11 @@
 									onclick={() => (selected = product)}
 								>
 									<span class="block text-base font-semibold text-zinc-50">{product.name}</span>
+									{#if inOrder}
+										<span class="mt-1 inline-block rounded-md bg-accent/15 px-2 py-0.5 text-xs font-bold text-accent">
+											Ya está en la lista · {inOrder.quantity} {inOrder.quantity === 1 ? 'pieza' : 'piezas'}
+										</span>
+									{/if}
 									<span class="mt-0.5 block text-sm text-zinc-400">
 										Clave {product.key}{product.alternateKey ? ` · Alterna ${product.alternateKey}` : ''} · Existencia {product.expected}
 									</span>
@@ -245,6 +290,7 @@
 					<h2 class="mt-5 text-sm font-bold tracking-wide text-amber-400 uppercase">Parecido · no exacto</h2>
 					<ul class="mt-2 space-y-2">
 						{#each shownSimilar as product (product.id)}
+							{@const inOrder = orderLineForProduct(order, product.id)}
 							<li>
 								<button
 									type="button"
@@ -252,6 +298,11 @@
 									onclick={() => (selected = product)}
 								>
 									<span class="block text-base font-semibold text-zinc-50">{product.name}</span>
+									{#if inOrder}
+										<span class="mt-1 inline-block rounded-md bg-accent/15 px-2 py-0.5 text-xs font-bold text-accent">
+											Ya está en la lista · {inOrder.quantity} {inOrder.quantity === 1 ? 'pieza' : 'piezas'}
+										</span>
+									{/if}
 									<span class="mt-0.5 block text-sm text-zinc-400">
 										Clave {product.key}{product.alternateKey ? ` · Alterna ${product.alternateKey}` : ''} · Existencia {product.expected}
 									</span>
@@ -297,7 +348,7 @@
 									type="button"
 									aria-label="Quitar {line.name} del pedido"
 									class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-lg text-zinc-300 active:bg-zinc-700"
-									onclick={() => persistOrder(removeLine(order, line.id))}
+									onclick={() => void persistOrder(removeLine(order, line.id))}
 								>
 									✕
 								</button>
@@ -307,7 +358,7 @@
 									type="button"
 									aria-label="Quitar una pieza"
 									class="flex h-11 w-11 items-center justify-center rounded-full bg-zinc-800 text-2xl font-bold text-zinc-100 active:bg-zinc-700"
-									onclick={() => persistOrder(updateLineQuantity(order, line.id, line.quantity - 1))}
+									onclick={() => void persistOrder(updateLineQuantity(order, line.id, line.quantity - 1))}
 								>
 									−
 								</button>
@@ -319,7 +370,7 @@
 									class="h-11 w-20 rounded-xl border border-zinc-700 bg-zinc-950 text-center text-xl font-bold text-zinc-50 outline-none focus:border-accent"
 									value={line.quantity}
 									onchange={(event) =>
-										persistOrder(
+										void persistOrder(
 											updateLineQuantity(order, line.id, Number((event.currentTarget as HTMLInputElement).value))
 										)}
 								/>
@@ -327,7 +378,7 @@
 									type="button"
 									aria-label="Agregar una pieza"
 									class="flex h-11 w-11 items-center justify-center rounded-full bg-zinc-800 text-2xl font-bold text-zinc-100 active:bg-zinc-700"
-									onclick={() => persistOrder(updateLineQuantity(order, line.id, line.quantity + 1))}
+									onclick={() => void persistOrder(updateLineQuantity(order, line.id, line.quantity + 1))}
 								>
 									+
 								</button>
@@ -352,7 +403,7 @@
 					class="mt-4 h-12 w-full rounded-2xl border border-zinc-700 text-base font-semibold text-red-400 active:bg-zinc-800"
 					onclick={() => {
 						if (confirmClear) {
-							persistOrder([]);
+							void persistOrder([]);
 							confirmClear = false;
 							showNotice('Pedido vaciado.');
 						} else {
@@ -528,5 +579,11 @@
 </div>
 
 {#if selected}
-	<QuantitySheet product={selected} onConfirm={confirmAdd} onClose={() => (selected = null)} />
+	<QuantitySheet
+		product={selected}
+		initialQuantity={selectedLine?.quantity ?? 1}
+		alreadyInOrder={selectedLine !== undefined}
+		onConfirm={confirmAdd}
+		onClose={() => (selected = null)}
+	/>
 {/if}

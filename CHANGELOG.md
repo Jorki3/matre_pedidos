@@ -1,5 +1,11 @@
 # Registro de cambios
 
+## [0.1.1] - 2026-11-10
+
+- Corregido: el pedido se podía perder al actualizar la página. Las escrituras del pedido eran asíncronas y nunca se esperaban, así que un refresh mataba la escritura en vuelo y nada avisaba. Ahora cada cambio se guarda en el mismo instante en un espejo síncrono, las escrituras a la base van en serie y siempre se esperan, y si el pedido cambia en otra pestaña esta se actualiza.
+- Añadido: en el buscador, el producto que ya está en el pedido muestra "Ya está en la lista · N piezas".
+- Añadido: la hoja de cantidad abre con la cantidad que ya llevas de ese producto y al confirmar ajusta esa línea (no duplica ni suma otra).
+
 ## [0.1.0] - 2026-11-10
 
 - Primera versión de MATRE Pedidos.

@@ -3,16 +3,27 @@
 
 	let {
 		product,
+		initialQuantity = 1,
+		alreadyInOrder = false,
 		onConfirm,
 		onClose
 	}: {
 		product: Product;
+		/** Cantidad con la que abre la hoja: la que ya llevas si el producto está en el pedido. */
+		initialQuantity?: number;
+		/** El producto ya está en el pedido: confirmar ajusta su cantidad, no suma otra línea. */
+		alreadyInOrder?: boolean;
 		onConfirm: (quantity: number) => void;
 		onClose: () => void;
 	} = $props();
 
-	let qty = $state(1);
-	let qtyText = $state('1');
+	// Se captura el valor inicial una sola vez: la hoja se monta de nuevo
+	// cada vez que se abre, así que no necesita reaccionar a cambios del prop.
+	function initialQtyValue(): number {
+		return Math.max(1, Math.floor(initialQuantity) || 1);
+	}
+	let qty = $state(initialQtyValue());
+	let qtyText = $state(String(initialQtyValue()));
 
 	function setQty(value: number) {
 		const next = Math.max(1, Math.floor(value) || 1);
@@ -44,7 +55,9 @@
 		aria-label="Cantidad a pedir"
 		tabindex="-1"
 	>
-		<p class="text-sm font-semibold text-zinc-400">Agregar al pedido</p>
+		<p class="text-sm font-semibold text-zinc-400">
+			{alreadyInOrder ? 'En tu pedido — ajusta la cantidad' : 'Agregar al pedido'}
+		</p>
 		<h2 class="mt-1 text-xl font-bold text-zinc-50">{product.name}</h2>
 		<p class="mt-1 text-sm text-zinc-400">
 			Clave {product.key}{product.alternateKey ? ` · Alterna ${product.alternateKey}` : ''} ·
@@ -85,7 +98,7 @@
 			class="mt-6 h-14 w-full rounded-2xl bg-accent text-lg font-bold text-white active:bg-accent-dark"
 			onclick={confirm}
 		>
-			Confirmar · agregar {qty} {qty === 1 ? 'pieza' : 'piezas'}
+			Confirmar · {alreadyInOrder ? 'poner' : 'agregar'} {qty} {qty === 1 ? 'pieza' : 'piezas'}
 		</button>
 		<button
 			type="button"
