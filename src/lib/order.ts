@@ -85,6 +85,39 @@ export function removeLine(lines: OrderLine[], lineId: string): OrderLine[] {
 	return lines.filter((line) => line.id !== lineId);
 }
 
+/**
+ * Marca o desmarca una línea de la lista de dictado. La línea sigue en
+ * el pedido con su cantidad: solo cambia su marca, nada se borra ni se oculta.
+ */
+export function toggleLineChecked(lines: OrderLine[], lineId: string): OrderLine[] {
+	return lines.map((line) =>
+		line.id === lineId ? { ...line, checked: !line.checked } : line
+	);
+}
+
+/**
+ * Quita todas las marcas de dictado. Las líneas del pedido quedan
+ * intactas con sus cantidades; solo se limpian las marcas.
+ */
+export function clearAllChecks(lines: OrderLine[]): OrderLine[] {
+	return lines.map((line) => ({ ...line, checked: false }));
+}
+
+export interface OrderCheckProgress {
+	/** Líneas ya dictadas (marcadas). */
+	checked: number;
+	/** Líneas totales del pedido. */
+	total: number;
+}
+
+/** Progreso de la lista de dictado: cuántas líneas ya se marcaron. */
+export function orderCheckProgress(lines: OrderLine[]): OrderCheckProgress {
+	return {
+		checked: lines.filter((line) => line.checked).length,
+		total: lines.length
+	};
+}
+
 export interface OrderTotals {
 	/** Número de líneas (productos distintos). */
 	lines: number;

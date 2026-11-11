@@ -1,5 +1,11 @@
 # Registro de cambios
 
+## [0.1.2] - 2026-11-10
+
+- Añadido: lista de dictado en Mi pedido. Cada línea tiene una casilla grande para marcar lo que ya se dictó o pidió; la línea marcada se ve tachada y atenuada, con su casilla en verde. Arriba se ve el progreso: "N de M dictados".
+- Añadido: botón "Limpiar marcas" para desmarcar todo sin tocar el pedido (no borra productos ni cantidades).
+- Las marcas se guardan igual que el pedido: en el mismo instante y sobreviven a actualizar la página.
+
 ## [0.1.1] - 2026-11-10
 
 - Corregido: el pedido se podía perder al actualizar la página. Las escrituras del pedido eran asíncronas y nunca se esperaban, así que un refresh mataba la escritura en vuelo y nada avisaba. Ahora cada cambio se guarda en el mismo instante en un espejo síncrono, las escrituras a la base van en serie y siempre se esperan, y si el pedido cambia en otra pestaña esta se actualiza.

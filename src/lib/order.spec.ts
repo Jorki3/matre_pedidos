@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addToOrder, orderLineForProduct, orderTotals, removeLine, setOrderProductQuantity, updateLineQuantity } from './order';
+import { addToOrder, clearAllChecks, orderCheckProgress, orderLineForProduct, orderTotals, removeLine, setOrderProductQuantity, toggleLineChecked, updateLineQuantity } from './order';
 import type { OrderLine, Product } from './types';
 
 function product(partial: Partial<Product> & { name: string; key: string }): Product {
@@ -99,6 +99,60 @@ describe('setOrderProductQuantity', () => {
 
 	it('rechaza cantidad negativa', () => {
 		expect(() => setOrderProductQuantity([], brocha, -1)).toThrow();
+	});
+});
+
+describe('toggleLineChecked', () => {
+	it('marca una línea sin tocar su cantidad', () => {
+		const lines = addToOrder([], brocha, 3);
+		const updated = toggleLineChecked(lines, lines[0].id);
+		expect(updated[0].checked).toBe(true);
+		expect(updated[0].quantity).toBe(3);
+		expect(updated).toHaveLength(1);
+	});
+
+	it('desmarca una línea que ya estaba marcada', () => {
+		const lines = addToOrder([], brocha, 3);
+		const marked = toggleLineChecked(lines, lines[0].id);
+		expect(marked[0].checked).toBe(true);
+		const updated = toggleLineChecked(marked, lines[0].id);
+		expect(updated[0].checked).toBe(false);
+	});
+
+	it('solo cambia la línea indicada', () => {
+		const lines = addToOrder(addToOrder([], brocha, 2), codo, 1);
+		const updated = toggleLineChecked(lines, lines[0].id);
+		expect(updated[0].checked).toBe(true);
+		expect(updated[1].checked).not.toBe(true);
+	});
+
+	it('una línea sin marca cuenta como no marcada', () => {
+		const lines = addToOrder([], brocha, 2);
+		expect(lines[0].checked).toBeUndefined();
+		expect(orderCheckProgress(lines)).toEqual({ checked: 0, total: 1 });
+	});
+});
+
+describe('clearAllChecks', () => {
+	it('quita todas las marcas y deja las líneas con sus cantidades', () => {
+		const lines = addToOrder(addToOrder([], brocha, 2), codo, 5);
+		const marked = toggleLineChecked(toggleLineChecked(lines, lines[0].id), lines[1].id);
+		const cleared = clearAllChecks(marked);
+		expect(cleared).toHaveLength(2);
+		expect(cleared.map((line) => line.quantity)).toEqual([2, 5]);
+		expect(cleared.every((line) => !line.checked)).toBe(true);
+	});
+});
+
+describe('orderCheckProgress', () => {
+	it('cuenta cuántas líneas ya se dictaron', () => {
+		const lines = addToOrder(addToOrder(addToOrder([], brocha, 3), codo, 10), foco, 5);
+		const marked = toggleLineChecked(lines, lines[1].id);
+		expect(orderCheckProgress(marked)).toEqual({ checked: 1, total: 3 });
+	});
+
+	it('pedido vacío es 0 de 0', () => {
+		expect(orderCheckProgress([])).toEqual({ checked: 0, total: 0 });
 	});
 });
 

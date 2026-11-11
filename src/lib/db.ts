@@ -75,8 +75,11 @@ export function writeOrderMirror(lines: OrderLine[]): void {
 
 function sameOrderLines(a: OrderLine[], b: OrderLine[]): boolean {
 	if (a.length !== b.length) return false;
-	const byId = new Map(a.map((line) => [line.id, line.quantity]));
-	return b.every((line) => byId.get(line.id) === line.quantity);
+	const byId = new Map(a.map((line) => [line.id, line]));
+	return b.every((line) => {
+		const other = byId.get(line.id);
+		return other?.quantity === line.quantity && Boolean(other?.checked) === Boolean(line.checked);
+	});
 }
 
 /** Escritura en Dexie por líneas: actualiza las que existen, borra las que ya no están. Nunca vacía la tabla para volver a escribirla. */

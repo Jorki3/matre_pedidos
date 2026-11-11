@@ -4,10 +4,13 @@
 	import { searchProducts } from '../lib/search';
 	import {
 		addToOrder,
+		clearAllChecks,
+		orderCheckProgress,
 		orderLineForProduct,
 		orderTotals,
 		removeLine,
 		setOrderProductQuantity,
+		toggleLineChecked,
 		updateLineQuantity
 	} from '../lib/order';
 	import {
@@ -42,6 +45,7 @@
 
 	const results = $derived(searchProducts(catalog, query));
 	const totals = $derived(orderTotals(order));
+	const checkProgress = $derived(orderCheckProgress(order));
 	const selectedLine = $derived(selected ? orderLineForProduct(order, selected.id) : undefined);
 	const shownExact = $derived(results.exact.slice(0, 100));
 	const shownSimilar = $derived(results.similar.slice(0, 100));
@@ -179,7 +183,7 @@
 		<div class="flex items-center justify-between">
 			<div>
 				<h1 class="text-xl font-bold leading-tight text-zinc-50">
-					MATRE Pedidos <span class="ml-1 rounded-md bg-accent px-1.5 py-0.5 align-middle text-xs font-bold text-white">v0.1.1</span>
+					MATRE Pedidos <span class="ml-1 rounded-md bg-accent px-1.5 py-0.5 align-middle text-xs font-bold text-white">v0.1.2</span>
 				</h1>
 				<p class="text-xs text-zinc-400">
 					{catalog.length} {catalog.length === 1 ? 'producto' : 'productos'} en catálogo
@@ -320,6 +324,9 @@
 			<p class="mt-1 text-sm text-zinc-400">
 				{totals.lines} {totals.lines === 1 ? 'producto' : 'productos'} · {totals.pieces} {totals.pieces === 1 ? 'pieza' : 'piezas'}
 			</p>
+			<p class="mt-1 text-sm font-bold text-emerald-400">
+				{checkProgress.checked} de {checkProgress.total} dictados
+			</p>
 
 			{#if order.length === 0}
 				<div class="mt-6 rounded-2xl border border-zinc-800 bg-zinc-900 p-5 text-center">
@@ -338,11 +345,28 @@
 			{:else}
 				<ul class="mt-4 space-y-2">
 					{#each order as line (line.id)}
-						<li class="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
-							<div class="flex items-start justify-between gap-3">
-								<div class="min-w-0">
-									<p class="text-base font-semibold text-zinc-50">{line.name}</p>
-									<p class="mt-0.5 text-sm text-zinc-400">Clave {line.key}</p>
+						<li class="rounded-2xl border p-4 {line.checked ? 'border-emerald-900/60 bg-zinc-900/60' : 'border-zinc-800 bg-zinc-900'}">
+							<div class="flex items-start gap-3">
+								<button
+									type="button"
+									aria-pressed={line.checked ?? false}
+									aria-label="{line.checked ? 'Desmarcar' : 'Marcar'} {line.name} como dictado"
+									class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border-2 {line.checked
+										? 'border-emerald-500 bg-emerald-500'
+										: 'border-zinc-600 bg-transparent active:border-emerald-500'}"
+									onclick={() => void persistOrder(toggleLineChecked(order, line.id))}
+								>
+									{#if line.checked}
+										<svg class="h-7 w-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+											<path d="M4 12.5l5 5L20 6.5" />
+										</svg>
+									{/if}
+								</button>
+								<div class="min-w-0 flex-1">
+									<p class="text-base font-semibold {line.checked ? 'text-zinc-400 line-through' : 'text-zinc-50'}">{line.name}</p>
+									<p class="mt-0.5 text-sm text-zinc-400">
+										Clave {line.key}{line.checked ? ' · Dictado' : ''}
+									</p>
 								</div>
 								<button
 									type="button"
@@ -387,6 +411,19 @@
 						</li>
 					{/each}
 				</ul>
+
+				{#if checkProgress.checked > 0}
+					<button
+						type="button"
+						class="mt-3 h-12 w-full rounded-2xl border border-zinc-700 text-base font-semibold text-zinc-200 active:bg-zinc-800"
+						onclick={() => {
+							void persistOrder(clearAllChecks(order));
+							showNotice('Marcas limpiadas. El pedido sigue igual.');
+						}}
+					>
+						Limpiar marcas ({checkProgress.checked})
+					</button>
+				{/if}
 
 				<button
 					type="button"

@@ -19,6 +19,8 @@ export interface OrderLine {
 	name: string;
 	quantity: number;
 	addedAt: string;
+	/** Marca de la lista: true cuando el producto ya se dictó/pidió. */
+	checked?: boolean;
 }
 
 export interface OrderBackup {

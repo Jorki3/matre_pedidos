@@ -93,6 +93,32 @@ describe('el pedido sobrevive a un refresh', () => {
 		expect(await loadOrder()).toEqual([]);
 	});
 
+	it('las marcas de dictado también sobreviven a un refresh', async () => {
+		const lines = [makeLine(1, 3), makeLine(2, 5), makeLine(3, 1)];
+		lines[0].checked = true;
+		lines[2].checked = true;
+		// Sin esperar: la escritura a Dexie todavía no terminó.
+		void saveOrder(lines).catch(() => {});
+		await db.close();
+		await db.open();
+		const loaded = await loadOrder();
+		expect(loaded.map((line) => line.checked)).toEqual([true, undefined, true]);
+		expect(loaded.map((line) => line.quantity)).toEqual([3, 5, 1]);
+	});
+
+	it('el espejo cura Dexie cuando cambia solo una marca', async () => {
+		const lines = [makeLine(1, 4), makeLine(2, 2)];
+		await saveOrder(lines);
+		const marked = [{ ...lines[0], checked: true }, lines[1]];
+		writeOrderMirror(marked);
+		const loaded = await loadOrder();
+		expect(loaded[0].checked).toBe(true);
+		expect(loaded[1].checked).not.toBe(true);
+		await new Promise((resolve) => setTimeout(resolve, 100));
+		const stored = await db.orderLines.toArray();
+		expect(stored.find((line) => line.productId === 'p1')?.checked).toBe(true);
+	});
+
 	it('sin espejo, carga desde Dexie (datos guardados antes de v0.1.1)', async () => {
 		await db.orderLines.bulkAdd([makeLine(1, 4), makeLine(2, 2)]);
 		const loaded = await loadOrder();
