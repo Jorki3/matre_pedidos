@@ -1,0 +1,33 @@
+@import 'tailwindcss';
+
+@theme {
+	--color-accent: #e11d2e;
+	--color-accent-dark: #b3121f;
+}
+
+html {
+	color-scheme: dark;
+}
+
+body {
+	background-color: #101012;
+	color: #f4f4f5;
+	font-family:
+		system-ui,
+		-apple-system,
+		'Segoe UI',
+		Roboto,
+		sans-serif;
+	-webkit-tap-highlight-color: transparent;
+}
+
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
+}
+
+input[type='number'] {
+	-moz-appearance: textfield;
+	appearance: textfield;
+}

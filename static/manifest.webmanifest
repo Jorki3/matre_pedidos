@@ -1,0 +1,1 @@
+{"background_color":"#101012","description":"Arma tu pedido caminando por la ferretería: busca el producto, pon la cantidad y exporta el pedido.","display":"standalone","icons":[{"purpose":"any","sizes":"any","src":"./favicon.svg","type":"image/svg+xml"}],"name":"MATRE Pedidos","orientation":"portrait","scope":"./","short_name":"Pedidos","start_url":"./","theme_color":"#e11d2e"}
