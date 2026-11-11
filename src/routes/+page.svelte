@@ -183,7 +183,7 @@
 		<div class="flex items-center justify-between">
 			<div>
 				<h1 class="text-xl font-bold leading-tight text-zinc-50">
-					MATRE Pedidos <span class="ml-1 rounded-md bg-accent px-1.5 py-0.5 align-middle text-xs font-bold text-white">v0.1.2</span>
+					MATRE Pedidos <span class="ml-1 rounded-md bg-accent px-1.5 py-0.5 align-middle text-xs font-bold text-white">v0.1.3</span>
 				</h1>
 				<p class="text-xs text-zinc-400">
 					{catalog.length} {catalog.length === 1 ? 'producto' : 'productos'} en catálogo
@@ -371,10 +371,12 @@
 								<button
 									type="button"
 									aria-label="Quitar {line.name} del pedido"
-									class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-lg text-zinc-300 active:bg-zinc-700"
+									class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-zinc-300 active:bg-zinc-700"
 									onclick={() => void persistOrder(removeLine(order, line.id))}
 								>
-									✕
+									<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+										<path d="M6 6l12 12M18 6L6 18" />
+									</svg>
 								</button>
 							</div>
 							<div class="mt-3 flex items-center gap-3">
@@ -600,16 +602,30 @@
 	<nav class="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-800 bg-[#101012]/95 backdrop-blur">
 		<div class="mx-auto flex w-full max-w-2xl">
 			<button type="button" class={navClass(view === 'buscar')} onclick={() => (view = 'buscar')}>
-				<span class="text-lg leading-none">🔍</span>Buscar
+				<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<circle cx="11" cy="11" r="7" />
+					<path d="M21 21l-4.35-4.35" />
+				</svg>Buscar
 			</button>
 			<button type="button" class={navClass(view === 'pedido')} onclick={() => (view = 'pedido')}>
-				<span class="text-lg leading-none">🧾</span>Mi pedido ({totals.lines})
+				<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<path d="M9 6h11M9 12h11M9 18h11" />
+					<path d="M4 6h.01M4 12h.01M4 18h.01" />
+				</svg>Mi pedido ({totals.lines})
 			</button>
 			<button type="button" class={navClass(view === 'catalogo')} onclick={() => (view = 'catalogo')}>
-				<span class="text-lg leading-none">📦</span>Catálogo
+				<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<path d="M21 8l-9-5-9 5v8l9 5 9-5z" />
+					<path d="M3 8l9 5 9-5" />
+					<path d="M12 13v8" />
+				</svg>Catálogo
 			</button>
 			<button type="button" class={navClass(view === 'respaldo')} onclick={() => (view = 'respaldo')}>
-				<span class="text-lg leading-none">💾</span>Respaldo
+				<svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+					<path d="M17 21v-8H7v8" />
+					<path d="M7 3v5h8" />
+				</svg>Respaldo
 			</button>
 		</div>
 	</nav>

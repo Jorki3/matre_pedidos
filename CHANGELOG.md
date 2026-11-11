@@ -1,5 +1,10 @@
 # Registro de cambios
 
+## [0.1.3] - 2026-11-10
+
+- Corregido: la fecha de las exportaciones usaba UTC y ya pasada la medianoche marcaba el día siguiente (el respaldo JSON salía con 2026-11-11 cuando aquí todavía era 2026-11-10). Ahora el nombre del Excel, el nombre del respaldo JSON y la fecha dentro del respaldo usan la fecha y hora local del dispositivo.
+- Cambiado: los emojis de la interfaz ahora son iconos (lupa en Buscar, lista en Mi pedido, caja en Catálogo, disquete en Respaldo y una X para quitar líneas). Ya no hay emojis en la app.
+
 ## [0.1.2] - 2026-11-10
 
 - Añadido: lista de dictado en Mi pedido. Cada línea tiene una casilla grande para marcar lo que ya se dictó o pidió; la línea marcada se ve tachada y atenuada, con su casilla en verde. Arriba se ve el progreso: "N de M dictados".

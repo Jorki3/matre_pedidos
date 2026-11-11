@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { backupFileName, buildBackup, orderExportRows, orderFileName, parseBackup } from './export';
+import {
+	backupFileName,
+	buildBackup,
+	localDateString,
+	localTimestamp,
+	orderExportRows,
+	orderFileName,
+	parseBackup
+} from './export';
 import type { OrderLine, Product } from './types';
 
 const catalog: Product[] = [
@@ -47,6 +55,40 @@ describe('file names', () => {
 	it('el nombre del respaldo lleva la fecha', () => {
 		expect(backupFileName(new Date('2026-11-10T12:00:00Z'))).toBe(
 			'MATRE_Pedidos_Respaldo_2026-11-10.json'
+		);
+	});
+});
+
+describe('fecha local, no UTC', () => {
+	// El caso que reportó Eduardo: a las 00:40 en Ciudad de México ya es
+	// 2026-11-11 en UTC. La fecha exportada debe ser la local (2026-11-10).
+	const madrugada = new Date('2026-11-11T02:00:00Z');
+
+	it('localDateString usa la fecha de la zona pedida, no la de UTC', () => {
+		expect(localDateString(madrugada, 'America/Mexico_City')).toBe('2026-11-10');
+		expect(localDateString(madrugada, 'UTC')).toBe('2026-11-11');
+	});
+
+	it('el respaldo JSON lleva la fecha local en el nombre', () => {
+		expect(backupFileName(madrugada, 'America/Mexico_City')).toBe(
+			'MATRE_Pedidos_Respaldo_2026-11-10.json'
+		);
+	});
+
+	it('el Excel del pedido lleva la fecha local en el nombre', () => {
+		expect(orderFileName(madrugada, 'America/Mexico_City')).toBe('MATRE_Pedido_2026-11-10.xlsx');
+	});
+
+	it('exportedAt del respaldo tiene fecha local y el mismo instante', () => {
+		const date = new Date('2026-11-11T02:00:00Z');
+		const backup = buildBackup(catalog, order, date);
+		expect(backup.exportedAt.startsWith(localDateString(date))).toBe(true);
+		expect(new Date(backup.exportedAt).getTime()).toBe(date.getTime());
+	});
+
+	it('localTimestamp incluye la zona horaria local', () => {
+		expect(localTimestamp(new Date('2026-11-10T12:00:00Z'))).toMatch(
+			/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/
 		);
 	});
 });

@@ -1,9 +1,47 @@
 import * as XLSX from 'xlsx';
 import type { OrderBackup, OrderLine, Product } from './types';
 
-/** Nombre de archivo con fecha, p. ej. MATRE_Pedido_2026-11-10.xlsx */
-export function orderFileName(date = new Date()): string {
-	return `MATRE_Pedido_${date.toISOString().slice(0, 10)}.xlsx`;
+/**
+ * Fecha local (la del dispositivo, p. ej. América/Ciudad de México) en formato
+ * AAAA-MM-DD. Nunca usar toISOString() para esto: esa fecha es UTC y pasada
+ * la medianoche local ya marca el día siguiente (p. ej. 2026-11-11 cuando aquí
+ * todavía es 2026-11-10). El parámetro timeZone solo existe para probar el
+ * comportamiento en otra zona; la app lo llama sin él.
+ */
+export function localDateString(date = new Date(), timeZone?: string): string {
+	if (!timeZone) {
+		const year = date.getFullYear();
+		const month = String(date.getMonth() + 1).padStart(2, '0');
+		const day = String(date.getDate()).padStart(2, '0');
+		return `${year}-${month}-${day}`;
+	}
+	return new Intl.DateTimeFormat('en-CA', {
+		timeZone,
+		year: 'numeric',
+		month: '2-digit',
+		day: '2-digit'
+	}).format(date);
+}
+
+/**
+ * Fecha y hora local con su zona horaria, p. ej. 2026-11-10T00:40:00-06:00.
+ * Representa el mismo instante que el ISO UTC, pero con la fecha local.
+ */
+export function localTimestamp(date = new Date()): string {
+	const offsetMinutes = -date.getTimezoneOffset();
+	const sign = offsetMinutes >= 0 ? '+' : '-';
+	const abs = Math.abs(offsetMinutes);
+	const offsetHours = String(Math.floor(abs / 60)).padStart(2, '0');
+	const offsetMins = String(abs % 60).padStart(2, '0');
+	const hours = String(date.getHours()).padStart(2, '0');
+	const minutes = String(date.getMinutes()).padStart(2, '0');
+	const seconds = String(date.getSeconds()).padStart(2, '0');
+	return `${localDateString(date)}T${hours}:${minutes}:${seconds}${sign}${offsetHours}:${offsetMins}`;
+}
+
+/** Nombre de archivo con fecha local, p. ej. MATRE_Pedido_2026-11-10.xlsx */
+export function orderFileName(date = new Date(), timeZone?: string): string {
+	return `MATRE_Pedido_${localDateString(date, timeZone)}.xlsx`;
 }
 
 /** Filas del Excel del pedido: Clave, Descripción, Cantidad a pedir. */
@@ -22,14 +60,14 @@ export function downloadOrderExcel(lines: OrderLine[]): void {
 	XLSX.writeFile(workbook, orderFileName());
 }
 
-export function backupFileName(date = new Date()): string {
-	return `MATRE_Pedidos_Respaldo_${date.toISOString().slice(0, 10)}.json`;
+export function backupFileName(date = new Date(), timeZone?: string): string {
+	return `MATRE_Pedidos_Respaldo_${localDateString(date, timeZone)}.json`;
 }
 
-export function buildBackup(catalog: Product[], order: OrderLine[]): OrderBackup {
+export function buildBackup(catalog: Product[], order: OrderLine[], date = new Date()): OrderBackup {
 	return {
 		version: 1,
-		exportedAt: new Date().toISOString(),
+		exportedAt: localTimestamp(date),
 		app: 'matre-pedidos',
 		catalog,
 		order
